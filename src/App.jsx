@@ -7,8 +7,7 @@ const initialProducts = [
     title: "Balenciaga",
     price: 285000,
     badge: "New",
-    image:
-      "https://images.unsplash.com/photo-1503341504253-dff4815485f1?auto=format&fit=crop&w=900&q=80",
+    image: "/images/hoodie-1.jpg",
     description: "Плотное худи Balenciaga из мягкого хлопка."
   },
   {
@@ -17,8 +16,7 @@ const initialProducts = [
     title: "Loro Piana",
     price: 330000,
     badge: "Basic",
-    image:
-      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
+    image: "/images/tee-1.jpg",
     description: "Базовая футболка на каждый день."
   },
   {
@@ -27,19 +25,27 @@ const initialProducts = [
     title: "LV Шорты (Louis Vuitton)",
     price: 478000,
     badge: "Drop",
-    image:
-      "https://images.unsplash.com/photo-1506629905607-d9d6a5b30e7b?auto=format&fit=crop&w=900&q=80",
+    image: "/images/shorts-1.jpg",
     description: "Минималистический дизайн."
   },
   {
     id: "shoes-1",
     category: "Обувь",
-    title: "Nike Jordan Air Force 1 (Limited Edition)",
+    title: "New Balance 2002R",
     price: 736000,
     badge: "Hot",
-    image:
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
-    description: "Повседневные кроссовки в уличном стиле."
+    image: "./images/nblue1.jpg",
+    images: {
+      gray: [
+        "./images/nbgray1.jpg",
+        "./images/nbgray2.jpg"
+      ],
+      blue: [
+        "./images/nblue1.jpg",
+        "./images/nblue2.jpg"
+      ]
+    },
+    description: "Кроссовки New Balance 2002R. Доступны серый и синий цвет."
   },
   {
     id: "accessory-1",
@@ -47,32 +53,26 @@ const initialProducts = [
     title: "Urban Cap",
     price: 149000,
     badge: "Style",
-    image:
-      "https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=900&q=80",
+    image: "/images/accessory-1.jpg",
     description: "Кепка с минималистичным дизайном."
   }
 ];
 
 const categoryMeta = {
   Худи: {
-    image:
-      "https://images.unsplash.com/photo-1503341504253-dff4815485f1?auto=format&fit=crop&w=900&q=80"
+    image: "/images/hoodie-1.jpg"
   },
   Футболки: {
-    image:
-      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80"
+    image: "/images/tee-1.jpg"
   },
   Шорты: {
-    image:
-      "https://images.unsplash.com/photo-1506629905607-d9d6a5b30e7b?auto=format&fit=crop&w=900&q=80"
+    image: "/images/shorts-1.jpg"
   },
   Обувь: {
-    image:
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80"
+    image: "/images/shoes-gray-1.jpg"
   },
   Аксессуары: {
-    image:
-      "https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=900&q=80"
+    image: "/images/accessory-1.jpg"
   }
 };
 
@@ -90,8 +90,10 @@ export default function ClothingMarketplaceMobileUI() {
   const [page, setPage] = useState("market");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [products, setProducts] = useState(initialProducts);
+  const [products] = useState(initialProducts);
   const [cart, setCart] = useState([]);
+  const [shoeColor, setShoeColor] = useState("gray");
+  const [shoeImageIndex, setShoeImageIndex] = useState(0);
 
   const categories = useMemo(() => {
     return Object.keys(categoryMeta).map((title) => {
@@ -135,7 +137,13 @@ export default function ClothingMarketplaceMobileUI() {
       .map((entry) => {
         const product = products.find((item) => item.id === entry.productId);
         if (!product) return null;
-        return { ...product, quantity: entry.quantity };
+
+        return {
+          ...product,
+          quantity: entry.quantity,
+          selectedColor: entry.selectedColor,
+          image: entry.selectedImage || product.image
+        };
       })
       .filter(Boolean);
   }, [cart, products]);
@@ -144,16 +152,34 @@ export default function ClothingMarketplaceMobileUI() {
   const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const addToCart = (product) => {
+    const selectedColor = product.id === "shoes-1" ? shoeColor : null;
+    const selectedImage =
+      product.id === "shoes-1" && product.images
+        ? product.images[shoeColor][shoeImageIndex]
+        : product.image;
+
     setCart((current) => {
-      const existing = current.find((item) => item.productId === product.id);
+      const existing = current.find(
+        (item) => item.productId === product.id && item.selectedColor === selectedColor
+      );
+
       if (existing) {
         return current.map((item) =>
-          item.productId === product.id
+          item.productId === product.id && item.selectedColor === selectedColor
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      return [...current, { productId: product.id, quantity: 1 }];
+
+      return [
+        ...current,
+        {
+          productId: product.id,
+          quantity: 1,
+          selectedColor,
+          selectedImage
+        }
+      ];
     });
   };
 
@@ -176,8 +202,11 @@ export default function ClothingMarketplaceMobileUI() {
   const openCategory = (category) => {
     setSelectedCategory(category);
     setPage("category");
+    if (category === "Обувь") {
+      setShoeColor("gray");
+      setShoeImageIndex(0);
+    }
   };
-
 
   const navItems = [
     { key: "market", label: "Каталог", icon: "⌘" },
@@ -202,7 +231,7 @@ export default function ClothingMarketplaceMobileUI() {
           </button>
         ) : null}
 
-        <div className="text-base font-semibold tracking-wide">EDJ Store</div>
+        <div className="text-base font-semibold tracking-wide"></div>
       </div>
 
       {page === "market" ? (
@@ -218,34 +247,55 @@ export default function ClothingMarketplaceMobileUI() {
     </div>
   );
 
-  const renderProductCard = (item) => (
-    <div
-      key={item.id}
-      className="overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.22)]"
-    >
-      <div className="aspect-[16/12] overflow-hidden">
-        <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
-      </div>
-      <div className="p-4">
-        <div className="mb-3 inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-black">
-          {item.badge}
-        </div>
-        <div className="mb-1 text-lg font-semibold">{item.title}</div>
-        <div className="mb-2 text-sm text-white/55">{item.category}</div>
-        <div className="mb-4 text-sm text-white/70">{item.description}</div>
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-base font-semibold">{formatPrice(item.price)}</div>
+  const renderShoeGallery = (item) => {
+    if (item.id !== "shoes-1" || !item.images) return null;
+
+    return (
+      <div className="flex flex-col gap-3 px-4 pb-4">
+        <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => addToCart(item)}
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition active:scale-[0.98]"
-          >
-            В корзину
-          </button>
+            onClick={() => {
+              setShoeColor("gray");
+              setShoeImageIndex(0);
+            }}
+            className={`h-6 w-6 rounded-full border ${
+              shoeColor === "gray" ? "border-white" : "border-white/30"
+            }`}
+            style={{ background: "#9ca3af" }}
+            aria-label="Серый цвет"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setShoeColor("blue");
+              setShoeImageIndex(0);
+            }}
+            className={`h-6 w-6 rounded-full border ${
+              shoeColor === "blue" ? "border-white" : "border-white/30"
+            }`}
+            style={{ background: "#2563eb" }}
+            aria-label="Синий цвет"
+          />
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {item.images[shoeColor].map((img, index) => (
+            <button
+              key={img}
+              type="button"
+              onClick={() => setShoeImageIndex(index)}
+              className={`h-14 w-14 shrink-0 overflow-hidden rounded-lg border ${
+                shoeImageIndex === index ? "border-white" : "border-white/20"
+              }`}
+            >
+              <img src={img} alt={`${item.title} ${index + 1}`} className="h-full w-full object-cover" />
+            </button>
+          ))}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderMarketPage = () => (
     <div className="px-4 pb-40 pt-4">
@@ -253,7 +303,7 @@ export default function ClothingMarketplaceMobileUI() {
         <div className="mb-4 flex items-end justify-between">
           <div>
             <h2 className="text-[30px] font-semibold tracking-tight">Каталог</h2>
-            <p className="text-sm text-white/55">Разделы: </p>
+            <p className="text-sm text-white/55">Разделы:</p>
           </div>
           <div className="rounded-full border border-white/10 bg-white/[0.08] px-3 py-1.5 text-xs text-white/70">
             {filteredCategories.length}
@@ -289,30 +339,40 @@ export default function ClothingMarketplaceMobileUI() {
 
       <div className="space-y-4">
         {selectedProducts.length ? (
-          selectedProducts.map((item) => (
-            <div
-              key={item.id}
-              className="overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.08]"
-            >
-              <div className="aspect-[16/12] overflow-hidden">
-                <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
-              </div>
-              <div className="p-4">
-                <div className="mb-2 text-lg font-semibold">{item.title}</div>
-                <div className="mb-2 text-sm text-white/65">{item.description}</div>
-                <div className="mb-4 text-base font-semibold">{formatPrice(item.price)}</div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => addToCart(item)}
-                    className="flex-1 rounded-full bg-white px-4 py-3 text-sm font-semibold text-black"
-                  >
-                    Добавить в корзину
-                  </button>
+          selectedProducts.map((item) => {
+            const activeImage =
+              item.id === "shoes-1" && item.images
+                ? item.images[shoeColor][shoeImageIndex]
+                : item.image;
+
+            return (
+              <div
+                key={item.id}
+                className="overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.08]"
+              >
+                <div className="aspect-[16/12] overflow-hidden">
+                  <img src={activeImage} alt={item.title} className="h-full w-full object-cover" />
+                </div>
+
+                {renderShoeGallery(item)}
+
+                <div className="p-4">
+                  <div className="mb-2 text-lg font-semibold">{item.title}</div>
+                  <div className="mb-2 text-sm text-white/65">{item.description}</div>
+                  <div className="mb-4 text-base font-semibold">{formatPrice(item.price)}</div>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => addToCart(item)}
+                      className="flex-1 rounded-full bg-white px-4 py-3 text-sm font-semibold text-black"
+                    >
+                      Добавить в корзину
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="rounded-[30px] border border-white/10 bg-white/[0.08] p-6 text-center text-white/60">
             Вещей пока что нет.
@@ -344,6 +404,11 @@ export default function ClothingMarketplaceMobileUI() {
               <div className="min-w-0 flex-1">
                 <div className="truncate text-base font-semibold">{item.title}</div>
                 <div className="mt-1 text-sm text-white/60">{item.category}</div>
+                {item.selectedColor ? (
+                  <div className="mt-1 text-sm text-white/50">
+                    Цвет: {item.selectedColor === "gray" ? "Серый" : "Синий"}
+                  </div>
+                ) : null}
                 <div className="mt-2 text-sm font-semibold">{formatPrice(item.price)}</div>
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <div className="flex items-center rounded-full border border-white/10 bg-black/20 p-1">
@@ -391,19 +456,19 @@ export default function ClothingMarketplaceMobileUI() {
           <span>{formatPrice(cartTotal)}</span>
         </div>
         {cartCount === 0 ? (
-        <div className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-gray-600 px-5 py-4 text-base font-semibold text-gray-300 cursor-not-allowed">
-          Оплатить
-        </div>
-      ) : (
-        <a
-          href={checkoutLink}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-4 text-base font-semibold text-black"
-        >
-          Оплатить
-        </a>
-      )}
+          <div className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-gray-600 px-5 py-4 text-base font-semibold text-gray-300 cursor-not-allowed">
+            Оплатить
+          </div>
+        ) : (
+          <a
+            href={checkoutLink}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-4 text-base font-semibold text-black"
+          >
+            Оплатить
+          </a>
+        )}
       </div>
     </div>
   );
@@ -471,10 +536,10 @@ export default function ClothingMarketplaceMobileUI() {
   );
 
   return (
-    <div className="min-h-screen bg-black p-4 text-white sm:p-6">
-      <div className="mx-auto flex min-h-[100dvh] items-center justify-center">
-        <div className="relative w-full max-w-[430px] overflow-hidden rounded-[44px] border border-white/10 bg-black shadow-[0_30px_80px_rgba(0,0,0,0.48)] md:h-[932px] md:max-h-[932px]">
-          <div className="h-[100dvh] overflow-y-auto md:h-[932px]">
+    <div className="fixed inset-0 overflow-hidden bg-black text-white">
+      <div className="mx-auto h-full w-full max-w-[430px] bg-black md:flex md:items-center md:justify-center">
+        <div className="relative h-full w-full overflow-hidden bg-black md:h-[932px] md:max-h-[932px]">
+          <div className="h-full overflow-y-auto overscroll-none">
             {renderHeader()}
             {page === "market" && renderMarketPage()}
             {page === "category" && renderCategoryPage()}
